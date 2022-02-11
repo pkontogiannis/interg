@@ -1,0 +1,55 @@
+version: '3.7'
+services:
+
+  stock_keepingdb:
+    image: postgres:14.1 # use 14.1 official postgres version
+    restart: always
+    container_name: stock_keeping_db
+    env_file:
+      - ./stock_keeping.env # configure postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - stock_keeping-data:/var/lib/stock_keeping_db/data # persist data even if container shuts down
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U stock_keepingdb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  stock_keepingtestdb:
+    image: postgres:14.1 # use 14.1 official postgres version
+    restart: always
+    container_name: stock_keeping_test_db
+    env_file:
+      - ./stock_keeping.env # configure postgres
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U stock_keepingdb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  stock_keepingpgadmin:
+    image: dpage/pgadmin4:6.4
+    container_name: stock_keeping_pgadmin
+    restart: always
+    ports:
+      - 8005:80
+    volumes:
+      - stock_keeping-pgadmin:/var/lib/stock_keeping_pgadmin
+      - ./servers.json:/pgadmin4/servers.json
+    environment:
+      PGADMIN_DEFAULT_EMAIL: root@stock-keeping.com
+      PGADMIN_DEFAULT_PASSWORD: root
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    hostname: pgadmin
+    depends_on:
+      - stock_keepingdb
+
+volumes:
+  stock_keeping-data: { } # named volumes can be managed easier using docker-compose
+  stock_keeping-test-data: { }
+  stock_keeping-pgadmin: { }
